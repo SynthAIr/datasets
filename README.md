@@ -1,4 +1,4 @@
-# Datasets repository: an overview of the availabel datasets for the SynthAir Project
+# Datasets repository: an overview of the available datasets for the SynthAir Project
 
 One location with summary about datasets explored as part of the SynthAir project
 
