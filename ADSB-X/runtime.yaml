@@ -1,0 +1,4 @@
+env_vars:
+  AWS_ENDPOINT_URL: "100.64.0.15:9000" # You might want to adjust the IP address too
+  AWS_ACCESS_KEY_ID: le88tMwRfi6SrcRzkmag
+  AWS_SECRET_ACCESS_KEY: bfCBPt2htyujozn1UlDWCPHSk3z6CLtqIpf9PaAR
