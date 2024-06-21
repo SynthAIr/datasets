@@ -48,6 +48,47 @@ In each zip file, there are several CSV files. The most important files are:
 
 ⬆️ [To summary table](#summary-table)
 
+## OpenSky
+
+Freely accessible ADS-B data [here](https://opensky-network.org), and one of the largest of its kind. Quality compares to the commercial data available on other platforms.
+
+OpenSky also provides a Live API for aircraft tracking.
+
+In the future, ATC voice recordings will be made available.
+
+Is only availble for research by universities or other 'not-for-profit' institutions.
+
+>Contains: 
+>- Historical raw ADS-B flight record data
+>- API access to live tracking of planes
+>- Scientific [set of datasets](https://opensky-network.org/data/datasets#d2) (Vector states, Raw data, LocaRDS, Covid19, Metadata, Emergencies, Climbings, ADS-C ...)
+
+
+### Example of data:
+
+<table>
+  <tr>
+    <td style="text-align:center;">
+      <img src="./OpenSky/figures/opensky_training_data_EHAM_to_LIMC.png" width="500">
+      <br>
+      <em>Example of flight trajectories from Amsterdam to Milan (2019-10-01 to 2019-12-01)</em>
+    </td>
+    <td style="text-align:center;">
+      <img src="./OpenSky/figures/opensky_training_data_with_altitude_EHAM_to_LIMC.png" width="500">
+      <br>
+      <em>Example of flight trajectories from Amsterdam to Milan (2019-10-01 to 2019-12-01) with altitude</em>
+    </td>
+  </tr>
+</table>
+
+- See the script [get_data.py](./OpenSky/get_data.py) for an example of how to download data from OpenSky.
+- See the script [preprocess_data.py](./OpenSky/preprocess_data.py) for an example of how to preprocess the data from OpenSky.
+
+### Description: 
+The OpenSky Network is a non-profit community-based receiver network which has been continuously collecting air traffic surveillance data since 2013. Unlike other networks, OpenSky keeps the complete unfiltered raw data and makes it accessible to academic and institutional researchers. With over 30 trillion ADS-B, Mode S, TCAS and FLARM messages collected from more than 6000 sensors around the world, the OpenSky Network exhibits the largest air traffic surveillance dataset of its kind. The mission of our non-profit association is to support open global air traffic research by universities and other not-for-profit institutions.
+
+⬆️ [To summary table](#summary-table)
+
 ## ADS-B Exchange
 
 The data from ADS-B Exchange is available free of charge for the first 24 hours of every month starting 2016.
@@ -195,30 +236,6 @@ Total cargo 2022 | The total amount of cargo handled at the airport in 2022
 
 ⬆️ [To summary table](#summary-table)
 
-## OpenSky
-
-Freely accessible ADS-B data [here](https://opensky-network.org), and one of the largest of its kind. Quality compares to the commercial data available on other platforms.
-
-OpenSky also provides a Live API for aircraft tracking.
-
-In the future, ATC voice recordings will be made available.
-
-Is only availble for research by universities or other 'not-for-profit' institutions.
-
->Contains: 
->- Historical raw ADS-B flight record data
->- API access to live tracking of planes
->- Scientific [set of datasets](https://opensky-network.org/data/datasets#d2) (Vector states, Raw data, LocaRDS, Covid19, Metadata, Emergencies, Climbings, ADS-C ...)
-
-
-### Note:
-Currently, the registration/user database is migrated and being worked on. Registration and emails may not work properly for a few days and new accounts could get lost. If you urgently need access, please contact us.
-
-
-### Description: 
-The OpenSky Network is a non-profit community-based receiver network which has been continuously collecting air traffic surveillance data since 2013. Unlike other networks, OpenSky keeps the complete unfiltered raw data and makes it accessible to academic and institutional researchers. With over 30 trillion ADS-B, Mode S, TCAS and FLARM messages collected from more than 6000 sensors around the world, the OpenSky Network exhibits the largest air traffic surveillance dataset of its kind. The mission of our non-profit association is to support open global air traffic research by universities and other not-for-profit institutions.
-
-⬆️ [To summary table](#summary-table)
 
 ## Data World
 

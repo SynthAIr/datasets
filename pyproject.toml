@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "datasets"
+version = "0.1.0"
+description = "Datasets and analysis tools for SynthAIr"
+authors = ["Murad <abdulmajid.murad@sintef.no>", "Zachari <zachari.thiry@sintef.no>"]
+readme = "README.md"
+repository = "https://github.com/SynthAIr/datasets"
+
+[tool.poetry.dependencies]
+python = "^3.10,<3.13"
+scikit-learn = "^1.5.0"
+numpy = "1.26.4"
+pandas = "^2.2.2"
+traffic = "^2.10.0"
+Cartopy = "^0.23.0"
+seaborn = "^0.13.2"
+altair = "^5.3.0"
+scipy = "1.13.0"
+einops = "^0.8.0"
+jupyterlab = "^4.2.1"
+black = "^24.4.2"
+isort = "^5.13.2"
+matplotlib = "^3.8.0"
+basemap = "^1.4.1"
+geopy = "^2.4.1"
+cython = "^3.0.10"
+geohash2 = "^1.1"
+
+[tool.poetry.group.dev.dependencies]
+make = "^0.1.6.post2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
