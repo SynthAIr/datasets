@@ -69,14 +69,14 @@ Is only availble for research by universities or other 'not-for-profit' institut
 <table>
   <tr>
     <td style="text-align:center;">
-      <img src="./OpenSky/figures/opensky_training_data_EHAM_to_LIMC.png" width="500">
+      <img src="./OpenSky/figures/opensky_EHAM_LIMC_2019-01-01_2020-01-01.png" width="500">
       <br>
-      <em>Example of flight trajectories from Amsterdam to Milan (2019-10-01 to 2019-12-01)</em>
+      <em>Example of flight trajectories from Amsterdam to Milan (2019-01-01 to 2020-01-01)</em>
     </td>
     <td style="text-align:center;">
-      <img src="./OpenSky/figures/opensky_training_data_with_altitude_EHAM_to_LIMC.png" width="500">
+      <img src="./OpenSky/figures/opensky_EHAM_LIMC_2019-01-01_2020-01-01_with_altitude.png" width="500">
       <br>
-      <em>Example of flight trajectories from Amsterdam to Milan (2019-10-01 to 2019-12-01) with altitude</em>
+      <em>Example of flight trajectories from Amsterdam to Milan (2019-01-01 to 2020-01-01) with altitude</em>
     </td>
   </tr>
 </table>

@@ -9,7 +9,66 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.basemap import Basemap
 from traffic.data import airports
 from scipy.stats import zscore
+from math import radians, sin, cos, sqrt, atan2
 import argparse
+
+
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371  # Radius of Earth in kilometers
+    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1-a))
+    distance = R * c
+    return distance
+
+
+def calculate_consecutive_distances(df, distance_threshold):
+    """Calculates distances between consecutive points and flags flights with any excessive distance."""
+    # Calculate distances for each point to the next within each flight
+    df = df.sort_values(['flight_id', 'timestamp'])
+    df['next_latitude'] = df.groupby('flight_id')['latitude'].shift(-1)
+    df['next_longitude'] = df.groupby('flight_id')['longitude'].shift(-1)
+
+    # Apply the Haversine formula
+    df['segment_distance'] = df.apply(
+        lambda row: haversine(row['latitude'], row['longitude'], row['next_latitude'], row['next_longitude']) 
+        if not pd.isna(row['next_latitude']) else 0, axis=1
+    )
+
+    # Find flights with any segment exceeding the threshold
+    outlier_flights = df[df['segment_distance'] > distance_threshold]['flight_id'].unique()
+    return outlier_flights 
+
+
+def calculate_initial_distance(df, origin_lat_lon, distance_threshold):
+    """Calculates distances between the first point in each flight and the origin airport."""
+    # Calculate distances from the origin airport to the first point of each flight
+
+    # first point of each flight
+    first_points = df.groupby('flight_id').first()
+    # Calculate distances from the origin airport to the first point of each flight
+    first_points['initial_distance'] = [haversine(lat, lon, origin_lat_lon[0], origin_lat_lon[1]) for lat, lon in zip(first_points['latitude'], first_points['longitude'])]
+
+    # Find flights with the first point exceeding the threshold
+    outlier_flights = first_points[first_points['initial_distance'] > distance_threshold].index
+    return outlier_flights
+
+def calculate_final_distance(df, destination_lat_lon, distance_threshold):
+    """Calculates distances between the last point in each flight and the destination airport."""
+    # Calculate distances from the destination airport to the last point of each flight
+
+    # last point of each flight
+    last_points = df.groupby('flight_id').last()
+    # Calculate distances from the destination airport to the last point of each flight
+    last_points['final_distance'] = [haversine(lat, lon, destination_lat_lon[0], destination_lat_lon[1]) for lat, lon in zip(last_points['latitude'], last_points['longitude'])]
+
+    # Find flights with the last point exceeding the threshold
+    outlier_flights = last_points[last_points['final_distance'] > distance_threshold].index
+    return outlier_flights
+
+
 
 def extract_geographic_info(
     training_data_path: str,
@@ -51,15 +110,12 @@ def extract_geographic_info(
     return ADEP_code, ADES_code, geographic_extent
 
 
-def plot_training_data(training_data_path: str) -> None:
+def plot_training_data(training_data_path: str, ADEP_code: str, ADES_code: str, geographic_extent: List[float]) -> None:
 
     plt.style.use("ggplot")
 
     fig, ax = plt.subplots(figsize=(12, 12), subplot_kw={"projection": EuroPP()})
     training_data = Traffic.from_file(training_data_path)
-    ADEP_code, ADES_code, geographic_extent = extract_geographic_info(
-        training_data_path
-    )
 
     training_data.plot(ax, alpha=0.2, color="darkblue", linewidth=1)
 
@@ -88,19 +144,23 @@ def plot_training_data(training_data_path: str) -> None:
     data_directory = os.path.dirname(training_data_path)
     save_path = os.path.join(data_directory, "figures")
     os.makedirs(save_path, exist_ok=True)
+    # save_name as training_data_path and replace the file extension with .png
+    save_name = os.path.basename(training_data_path).replace(".pkl", ".png")
     plt.savefig(
-        f"{save_path}/opensky_training_data_{ADEP_code}_to_{ADES_code}.png", bbox_inches="tight"
+        f"{save_path}/{save_name}", bbox_inches="tight"
     )
-    print(f"Saved figure to {save_path}/opensky_training_data_{ADEP_code}_to_{ADES_code}.png")
+    print(f"Saved figure to {save_path}/{save_name}")
+
+    # plt.savefig(
+    #     f"{save_path}/opensky_training_data_{ADEP_code}_to_{ADES_code}.png", bbox_inches="tight"
+    # )
+    # print(f"Saved figure to {save_path}/opensky_training_data_{ADEP_code}_to_{ADES_code}.png")
 
 
 
-def plot_training_data_with_altitude(training_data_path: str) -> None:
+def plot_training_data_with_altitude(training_data_path: str, ADEP_code: str, ADES_code: str, geographic_extent: List[float]) -> None:
     # Set up the map
     training_data = Traffic.from_file(training_data_path)
-    ADEP_code, ADES_code, geographic_extent = extract_geographic_info(
-        training_data_path
-    )
     df = training_data.data
     fig, ax = plt.subplots(figsize=(13, 12))
     m = Basemap(
@@ -160,11 +220,16 @@ def plot_training_data_with_altitude(training_data_path: str) -> None:
     data_directory = os.path.dirname(training_data_path)
     save_path = os.path.join(data_directory, "figures")
     os.makedirs(save_path, exist_ok=True)
+    save_name = os.path.basename(training_data_path).replace(".pkl", "_with_altitude.png")
     plt.savefig(
-        f"{save_path}/opensky_training_data_with_altitude_{ADEP_code}_to_{ADES_code}.png",
-        bbox_inches="tight",
+        f"{save_path}/{save_name}", bbox_inches="tight"
     )
-    print(f"Saved figure to {save_path}/opensky_training_data_with_altitude_{ADEP_code}_to_{ADES_code}.png")
+    print(f"Saved figure to {save_path}/{save_name}")
+    # plt.savefig(
+    #     f"{save_path}/opensky_training_data_with_altitude_{ADEP_code}_to_{ADES_code}.png",
+    #     bbox_inches="tight",
+    # )
+    # print(f"Saved figure to {save_path}/opensky_training_data_with_altitude_{ADEP_code}_to_{ADES_code}.png")
 
 
 
@@ -176,10 +241,14 @@ def get_trajectories(flights_points: pd.DataFrame) -> Traffic:
     )
 
     # Create Flight objects for each unique flight ID
-    flights_list = [
-        Flight(flights_points[flights_points["flight_id"] == flight_id])
-        for flight_id in flights_points["flight_id"].unique()
-    ]
+    # flights_list = [
+    #     Flight(flights_points[flights_points["flight_id"] == flight_id])
+    #     for flight_id in flights_points["flight_id"].unique()
+    # ]
+    # Group the DataFrame by 'flight_id' and then create Flight objects
+    grouped_flights = flights_points.groupby('flight_id')
+    flights_list = [Flight(group) for _, group in grouped_flights]
+
 
     # Create a Traffic object containing all the flights
     trajectories = Traffic.from_flights(flights_list)
@@ -259,33 +328,52 @@ def remove_outliers(opensky_data: pd.DataFrame, thresholds: List[float]) -> Tupl
         outliers = df[df['z_score'].abs() > threshold]
         return outliers.drop(columns='z_score')
         
-    latitude_threshold, longitude_threshold, altitude_threshold, lowest_sequence_length_threshold = thresholds
-    latitude_outliers = find_outliers_zscore(opensky_data, 'latitude', threshold=latitude_threshold)
-    print(f"Found {len(latitude_outliers)} outliers in column 'latitude', with threshold {latitude_threshold}")
-    print(latitude_outliers[['flight_id', 'latitude']])
-    print(latitude_outliers['flight_id'].unique())
-    print(f"Number of unique flight ids: {latitude_outliers['flight_id'].nunique()}")
+    consecutive_distance_threshold, altitude_threshold, lowest_sequence_length_threshold = thresholds
 
-    longitude_outliers = find_outliers_zscore(opensky_data, 'longitude', threshold=longitude_threshold)
-    print(f"Found {len(longitude_outliers)} outliers in column 'longitude', with threshold {longitude_threshold}")
-    print(longitude_outliers[['flight_id', 'longitude']])
-    print(longitude_outliers['flight_id'].unique())
-    print(f"Number of unique flight ids: {longitude_outliers['flight_id'].nunique()}")
+
+    consecutive_distance_outliers = calculate_consecutive_distances(opensky_data, distance_threshold=consecutive_distance_threshold)
+    print(f"Found {len(consecutive_distance_outliers)} flights with excessive consecutive distances.")
+
+    ADEP_code = opensky_data['ADEP'].value_counts().idxmax()
+    ADES_code = opensky_data['ADES'].value_counts().idxmax()
+    ADEP_lat_lon = airports[ADEP_code].latlon
+    ADES_lat_lon = airports[ADES_code].latlon
+    # find outliers where the distance between the first point in the flight and the origin airport is greater than 100 km
+    initial_distance_outliers = calculate_initial_distance(opensky_data, ADEP_lat_lon, distance_threshold=100)
+    print(f"Found {len(initial_distance_outliers)} flights with excessive initial distances.")
+    print(f"Number of unique flight ids in initial distance outliers that are in consecutive distance outliers: {len(set(initial_distance_outliers).intersection(set(consecutive_distance_outliers)))}")
+
+    # find outliers where the distance between the last point in the flight and the destination airport is greater than 100 km
+    final_distance_outliers = calculate_final_distance(opensky_data, ADES_lat_lon, distance_threshold=100)
+    print(f"Found {len(final_distance_outliers)} flights with excessive final distances.")
+    print(f"Number of unique flight ids in final distance outliers that are in consecutive distance outliers: {len(set(final_distance_outliers).intersection(set(consecutive_distance_outliers)))}")
+    print(f"Number of unique flight ids in final distance outliers that are in initial distance outliers: {len(set(final_distance_outliers).intersection(set(initial_distance_outliers)))}")
 
     altitude_outliers = find_outliers_zscore(opensky_data, 'altitude', threshold=altitude_threshold)
     print(f"Found {len(altitude_outliers)} outliers in column 'altitude', with threshold {altitude_threshold}")
     print(altitude_outliers[['flight_id', 'altitude']])
-    print(altitude_outliers['flight_id'].unique())
-    print(f"Number of unique flight ids: {altitude_outliers['flight_id'].nunique()}")
+    # print(altitude_outliers['flight_id'].unique())
+    print(f"Number of unique flight ids in altitude outliers: {altitude_outliers['flight_id'].nunique()}\n")
+
+
 
     # drop rows with altitude outliers
+    print("Dropping rows with altitude outliers...")
     opensky_data = opensky_data.drop(altitude_outliers.index).reset_index(drop=True)
-    # drop flights with latitude outliers
-    opensky_data = opensky_data[~opensky_data['flight_id'].isin(latitude_outliers['flight_id'])]
+ 
+    # drop flights with consecutive distance outliers
+    print("Dropping flights with consecutive distance outliers...")
+    opensky_data = opensky_data[~opensky_data['flight_id'].isin(consecutive_distance_outliers)]
 
-    # drop flights with longitude outliers if they are not already dropped
-    longitude_outliers = longitude_outliers[~longitude_outliers['flight_id'].isin(latitude_outliers['flight_id'])]
-    opensky_data = opensky_data[~opensky_data['flight_id'].isin(longitude_outliers['flight_id'])]
+    # drop flights with initial distance outliers that are not dropped by consecutive distance outliers
+    initial_distance_outliers = [flight_id for flight_id in initial_distance_outliers if flight_id not in consecutive_distance_outliers]
+    print("Dropping flights with initial distance outliers...")
+    opensky_data = opensky_data[~opensky_data['flight_id'].isin(initial_distance_outliers)]
+
+    # drop flights with final distance outliers that are not dropped by consecutive distance outliers or initial distance outliers
+    final_distance_outliers = [flight_id for flight_id in final_distance_outliers if flight_id not in consecutive_distance_outliers and flight_id not in initial_distance_outliers]
+    print("Dropping flights with final distance outliers...")
+    opensky_data = opensky_data[~opensky_data['flight_id'].isin(final_distance_outliers)]
 
     # reset the index
     opensky_data = opensky_data.reset_index(drop=True)
@@ -302,12 +390,18 @@ def remove_outliers(opensky_data: pd.DataFrame, thresholds: List[float]) -> Tupl
     # drop flights with lowest sequence length
     low_counts_outliers = size[size['z_score'] < lowest_sequence_length_threshold]
     print(f"Found {len(low_counts_outliers)} outliers in column 'counts', with threshold {lowest_sequence_length_threshold}")
-    print(low_counts_outliers)
+    # print(low_counts_outliers)
 
     # drop the low counts outliers
     opensky_data = opensky_data[~opensky_data['flight_id'].isin(low_counts_outliers['flight_id'])]
     # reset the index
     opensky_data = opensky_data.reset_index(drop=True)
+
+    # remove flights with duplicate rows of the same timestamp. To address: ValueError: cannot reindex on an axis with duplicate labels
+    duplicate_rows = opensky_data[opensky_data.duplicated(subset=['flight_id', 'timestamp'], keep=False)]
+    duplicate_flights = duplicate_rows['flight_id'].unique()
+    print(f"Found {len(duplicate_flights)} flights with duplicate rows")
+    opensky_data = opensky_data[~opensky_data['flight_id'].isin(duplicate_flights)]
 
     return opensky_data, avg_sequence_length
 
@@ -338,23 +432,32 @@ def main(args):
     # remove outliers
     opensky_data, avg_sequence_length = remove_outliers(opensky_data, args.thresholds)
 
-
+    print("Removed outliers, now getting trajectories...")
     trajectories = get_trajectories(opensky_data)
 
+    print("Preparing trajectories...")
     trajectories = prepare_trajectories(
         trajectories, int(avg_sequence_length), n_jobs=7, douglas_peucker_coeff=None
     )
 
-    save_path = "./opensky_traffic.pkl"
+    # save_path = "./opensky_traffic.pkl"
+    # replace the file extension with .pkl
+    save_path = args.opensky_data.replace(".csv", ".pkl")
     trajectories.to_pickle(save_path)
 
     # Plot the training data
-    plot_training_data(training_data_path=save_path)
+    print("Plotting training data...")
 
-    plot_training_data_with_altitude(training_data_path=save_path)
+    ADEP_code, ADES_code, geographic_extent = extract_geographic_info(
+        training_data_path=save_path
+    )
+    plot_training_data(training_data_path=save_path, ADEP_code=ADEP_code, ADES_code=ADES_code, geographic_extent=geographic_extent)
+
+    # print("Plotting training data with altitude...")
+    plot_training_data_with_altitude(training_data_path=save_path, ADEP_code=ADEP_code, ADES_code=ADES_code, geographic_extent=geographic_extent)
 
     # remove the saved file
-    os.remove(save_path)
+    # os.remove(save_path)
 
 
 if __name__ == "__main__":
@@ -365,9 +468,11 @@ if __name__ == "__main__":
         "--thresholds",
         nargs=3,
         type=float,
-        default=[2.0, 3.0, 2.2, -1.4],
-        help="Threshold values for outliers in latitude, longitude, and altitude, and lowest sequence length",
+        default=[50, 2.2, -1.4],
+        help="Threshold values for consecutive distance, altitude, and lowest sequence length",
     )
+
+
     parser.add_argument(
         "--window",
         type=int,
@@ -377,7 +482,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--opensky_data",
         type=str,
-        default="./opensky_EHAM_LIMC_2019-10-01_2019-12-01.csv",
+        default="./opensky_EHAM_LIMC_2019-01-01_2020-01-01.csv",
         help="Path to OpenSky data",
     )
     args = parser.parse_args()
